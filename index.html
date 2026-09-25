@@ -68,6 +68,11 @@ select{border:1px solid var(--line);background:#fff;border-radius:12px;padding:1
 .chart-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 10px 35px rgba(24,54,93,.055);transition:transform .35s,box-shadow .35s}
 .chart-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
 .chart-card.wide{grid-column:1/-1}
+.charts .chart-card{min-height:460px}
+.charts .chart-card:nth-child(1){border-top:4px solid #1769e0}
+.charts .chart-card:nth-child(2){border-top:4px solid #4f8df7}
+.charts .chart-card:nth-child(3){border-top:4px solid #6c63ff}
+.charts .chart-card:nth-child(4){border-top:4px solid #16a085}
 .meta{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px}
 .qno,.total{font-size:10px;font-weight:800;letter-spacing:.09em;color:var(--blue);text-transform:uppercase}
 .total{color:#8b98aa}
@@ -185,23 +190,21 @@ footer strong{color:#fff}
   <div class="container">
     <div class="section-head reveal">
       <div class="kicker">03 / Survey Results</div>
-      <h2>Explore all 30 questions</h2>
-      <p>Use the filter to explore the complete response distribution. Hover over a chart for exact values.</p>
+      <h2>4 Important Survey Results</h2>
+      <p>These four charts highlight the most important areas of data-privacy awareness and digital safety. Hover over a chart for exact values.</p>
     </div>
     <div class="toolbar reveal">
-      <div class="count">Showing <strong>67</strong> respondents across <strong>30</strong> questions.</div>
-      <select id="filter">
-        <option value="all">All Questions</option>
-        <option value="yesno">Yes / No / Simple Choice</option>
-        <option value="choice">Multiple Choice</option>
-        <option value="multi">Multi-Select Questions</option>
-      </select>
+      <div class="count">Showing <strong>67</strong> respondents across <strong>4</strong> important questions.</div>
     </div>
     <div class="note reveal">
       <i class="fa-solid fa-database"></i>
-      <div><strong>Source:</strong> your uploaded survey response Excel sheet. Multi-select questions count each selected option, so their option totals can be greater than 67.</div>
+      <div><strong>Source:</strong> your uploaded survey response data. These four charts were selected to give a concise overview of privacy awareness, privacy-policy behaviour, 2FA usage, and phishing awareness.</div>
     </div>
     <div class="charts" id="charts"></div>
+    <div class="note reveal" style="margin-top:22px;margin-bottom:0">
+      <i class="fa-solid fa-chart-simple"></i>
+      <div><strong>Why these four?</strong> Together they cover basic awareness, privacy behaviour, account security, and phishing awareness—the main themes of the survey.</div>
+    </div>
   </div>
 </section>
 
@@ -322,23 +325,27 @@ function chartConfig(item) {
   };
 }
 
-function renderCharts(filter='all') {
+function renderCharts() {
   chartInstances.forEach(c => c.destroy());
   chartInstances = [];
+
   const container = document.getElementById('charts');
 
-  const data = SURVEY_DATA.filter(item => filter === 'all' || item.category === filter);
+  // Four most important survey areas:
+  // Q6  - Basic awareness of data privacy
+  // Q10 - Privacy-policy reading behaviour
+  // Q21 - Two-factor authentication
+  // Q24 - Phishing awareness
+  const importantIds = [6, 10, 21, 24];
+  const data = importantIds
+    .map(id => SURVEY_DATA.find(item => item.id === id))
+    .filter(Boolean);
 
-  if(!data.length) {
-    container.innerHTML = '<div class="info-card"><h3>No questions in this filter.</h3></div>';
-    return;
-  }
-
-  container.innerHTML = data.map((item,i) => `
-    <article class="chart-card reveal ${item.responses.length >= 9 ? 'wide' : ''}" style="transition-delay:${Math.min(i*35,350)}ms">
+  container.innerHTML = data.map((item, i) => `
+    <article class="chart-card reveal" style="transition-delay:${i*100}ms">
       <div class="meta">
         <span class="qno">Question ${String(item.id).padStart(2,'0')}</span>
-        <span class="total">${item.total} respondents${item.multi ? ' · multi-select' : ''}</span>
+        <span class="total">${item.total} respondents</span>
       </div>
       <h3 class="chart-title">${escapeHTML(item.question)}</h3>
       <div class="chart-box"><canvas id="chart-${item.id}"></canvas></div>
@@ -392,8 +399,6 @@ function observeReveals() {
 renderFindings();
 renderCharts();
 
-const filter = document.getElementById('filter');
-filter.addEventListener('change', e => renderCharts(e.target.value));
 
 const findingsObserver = new IntersectionObserver(entries => {
   entries.forEach(entry => {
